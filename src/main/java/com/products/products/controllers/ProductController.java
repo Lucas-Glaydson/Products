@@ -7,11 +7,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -20,10 +18,15 @@ public class ProductController {
     @Autowired
     private ProductRepository productRepository;
 
-    @PutMapping
+    @PostMapping
     public ResponseEntity<ProductModel> registerProduct(@RequestBody ProductDTO productDTO){
         var product = new ProductModel();
         BeanUtils.copyProperties(productDTO, product);
         return ResponseEntity.status(HttpStatus.CREATED).body(productRepository.save(product));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ProductModel>> getAllProducts(){
+        return ResponseEntity.status(HttpStatus.OK).body(productRepository.findAll());
     }
 }
