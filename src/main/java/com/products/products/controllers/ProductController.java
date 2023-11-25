@@ -5,6 +5,7 @@ import com.products.products.models.ProductModel;
 import com.products.products.repository.ProductRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Link;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/products")
@@ -28,13 +32,25 @@ public class ProductController {
 
     @GetMapping
     public ResponseEntity<List<ProductModel>> getAllProducts() {
-        return ResponseEntity.status(HttpStatus.OK).body(productRepository.findAll());
+        List<ProductModel> productModelList = productRepository.findAll();
+
+        if (!productModelList.isEmpty()){
+            for (ProductModel productModel : productModelList){
+                UUID id = productModel.getIdProduct();
+                productModel.add(linkTo(methodOn(ProductController.class).getOneProduct(id)).withSelfRel());
+            }
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(productModelList);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Object> getOneProduct(@PathVariable(value = "id") UUID id) {
         Optional<ProductModel> product = productRepository.findById(id);
-        return product.<ResponseEntity<Object>>map(productModel -> ResponseEntity.status(HttpStatus.OK).body(productModel)).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found."));
+        if (product.isEmpty())
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
+
+        product.get().add(linkTo(methodOn(ProductController.class).getAllProducts()).withSelfRel());
+        return ResponseEntity.status(HttpStatus.OK).body(product.get());
     }
 
     @PutMapping("/{id}")
